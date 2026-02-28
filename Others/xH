@@ -1,0 +1,38 @@
+import yt_dlp
+import sys
+
+def download_video():
+    # 1. Get the URL from the user
+    video_url = input("Please paste the video link: ").strip()
+    
+    if not video_url:
+        print("Error: No link provided.")
+        return
+
+    # 2. Configure options to handle constraints
+    # 'best' ensures high resolution
+    # 'quiet' reduces terminal clutter
+    # 'nocheckcertificate' helps with some connection blocks
+    ydl_opts = {
+        'format': 'bestvideo+bestaudio/best', 
+        'outtmpl': '%(title)s.%(ext)s',
+        'no_warnings': True,
+        'ignoreerrors': False,
+        'nocheckcertificate': True,
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    }
+
+    print(f"\nAttempting to analyze: {video_url}")
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Extract info and download
+            ydl.download([video_url])
+            print("\nSuccess! Your video has been downloaded to the current folder.")
+            
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+        print("Tip: Make sure the link is correct and that you have 'ffmpeg' installed for high-res merging.")
+
+if __name__ == "__main__":
+    download_video()
