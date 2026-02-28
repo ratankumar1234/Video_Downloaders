@@ -1,0 +1,50 @@
+import yt_dlp
+import shutil
+
+def download_video():
+    # 1. Get the URL
+    video_url = input("Please paste the video link: ").strip()
+    
+    if not video_url:
+        print("Error: No link provided.")
+        return
+
+    # 2. Configure options (Now correctly indented!)
+    ydl_opts = {
+        'format': 'bestvideo[protocol^=m3u8]+bestaudio/best',
+        'outtmpl': '%(title)s.%(ext)s',
+        
+        # Native speedups
+        'concurrent_fragment_downloads': 16,
+        'n_threads': 20,
+        'buffersize': 1024 * 64,
+        
+        'no_warnings': True,
+        'nocheckcertificate': True,
+    }
+
+    # SAFETY CHECK: Only use aria2c if it is actually installed on this PC
+    if shutil.which("aria2c"):
+        ydl_opts['external_downloader'] = 'aria2c'
+        ydl_opts['external_downloader_args'] = [
+            '--min-split-size=1M',
+            '--max-connection-per-server=16',
+            '--split=16',
+            '--max-concurrent-downloads=16',
+        ]
+    else:
+        print("Note: 'aria2c' not found. Using standard fast download mode.")
+
+    print(f"\nAttempting to analyze: {video_url}")
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+            print("\nSuccess! Video downloaded.")
+            
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+        print("Tip: Ensure 'ffmpeg' is installed. Without it, the video and audio won't merge.")
+
+if __name__ == "__main__":
+    download_video()
