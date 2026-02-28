@@ -1,0 +1,120 @@
+import os
+import time
+import sys
+import yt_dlp
+
+class DummyLogger:
+    def debug(self, msg): pass
+    def warning(self, msg): pass
+    def error(self, msg): pass
+
+
+last_update_time = [0]
+def progress_hook(d):
+    if d['status'] == 'downloading':
+        current_time = time.time()
+        if current_time - last_update_time[0] >= 3:
+            total = d.get('total_bytes') or d.get('total_bytes_estimate')
+            downloaded = d.get('downloaded_bytes', 0)
+            percentage = downloaded / total * 100 if total else 0
+            speed = d.get('speed') or 0
+            eta = d.get('eta') or 0
+            sys.stdout.write(
+                f"\r⬇ Downloaded: {percentage:5.2f}% | ⏱ Speed: {speed / 1024:6.2f} KB/s | ⏳ ETA: {eta:4.1f} sec"
+            )
+            sys.stdout.flush()
+            last_update_time[0] = current_time
+
+
+print("\n")
+url = input("🎬 Enter YouTube video URL: ").strip()
+print("\n")
+format_choice = input("🎥 Choose format (mp4/mp3): ").strip().lower()
+print("\n")
+custom_name = input("Enter name (no extension): ").strip()
+print("\n🔍 Checking URL and format...\n")
+
+
+ffmpeg_path = r"C:\ffmpeg\bin" 
+
+
+download_folder = os.path.join(os.path.expanduser("~"), "Downloads")
+
+
+if format_choice == 'mp4':
+    with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True}) as ydl:
+        info = ydl.extract_info(url, download=False)
+        duration_sec = info.get('duration') or 0
+
+        mp4_streams = [
+            f for f in info['formats']
+            if f.get('ext') == 'mp4' and f.get('height') and f.get('vcodec') != 'none'
+        ]
+
+        resolution_data = []
+        for f in mp4_streams:
+            res = f['height']
+            fmt_id = f['format_id']
+            filesize = f.get('filesize') or f.get('filesize_approx')
+            
+         
+            if not filesize:
+                abr = f.get('tbr') or 0  
+                filesize = abr * 1024 / 8 * duration_sec if abr and duration_sec else 0
+
+            if not any(r[0] == res for r in resolution_data):
+                resolution_data.append((res, fmt_id, filesize))
+
+        resolution_data.sort()
+        print("\n🧮 Available MP4 Resolutions:")
+        for i, (res, _, size) in enumerate(resolution_data):
+            size_mb = size / (1024 * 1024) if size else 0
+            size_display = f"{size_mb:.2f} MB" if size else "Unknown Size"
+            print(f"{i + 1}. {res}p | 💾 Size: {size_display}")
+
+        choice = int(input("\n👉 Enter index number of resolution: "))
+        selected_format_id = resolution_data[choice - 1][1]
+
+
+ydl_opts = {
+    'ffmpeg_location': ffmpeg_path,
+    'outtmpl': os.path.join(download_folder, f"{custom_name}.%(ext)s"),
+    'progress_hooks': [progress_hook],
+    'quiet': True,
+    'no_warnings': True,
+    'logger': DummyLogger(),
+}
+
+# 🎵 Audio Format
+if format_choice == 'mp3':
+    ydl_opts.update({
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+    })
+
+
+elif format_choice == 'mp4':
+    ydl_opts.update({
+        'format': f'{selected_format_id}+bestaudio[ext=m4a]',
+        'merge_output_format': 'mp4',
+    })
+else:
+    print("❌ Invalid format selected.")
+    sys.exit()
+
+
+print(f"\n📥 Saving file to: {download_folder}")
+print("\n⚡ Starting download...\n")
+start = time.time()
+
+with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    ydl.download([url])
+
+end = time.time()
+print("\n")
+print("\n✅ Download complete")
+print("\n")
