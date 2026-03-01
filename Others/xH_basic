@@ -39,3 +39,11 @@ def download_video():
 
 if __name__ == "__main__":
     download_video()
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+import shutil
+
+# This copies the file to the main folder of your Google Drive
+shutil.copy('/content/Young Studs Cougar Traps.mp4', '/content/drive/MyDrive/Young Studs Cougar Traps.mp4')
