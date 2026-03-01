@@ -1,3 +1,8 @@
+# To Run in Google Colab,uncomment below lines:
+#!pip install yt-dlp
+#!apt-get update
+#!apt-get install ffmpeg
+
 import os
 import time
 import sys
